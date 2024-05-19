@@ -2,13 +2,10 @@ import dotenv from 'dotenv';
 import pkg from 'pg';
 const { Pool } = pkg;
 
-dotenv.config(); // Load environment variables
+dotenv.config();
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false, // Disable SSL verification for simplicity
-  },
+  connectionString: process.env.DATABASE_URL
 });
 
 export default {
