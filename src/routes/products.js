@@ -5,27 +5,16 @@ const router = express.Router();
 
 router.get('/products', async (req, res) => {
   try {
-      const results = await db.query(
-          `SELECT p.id, p.article_id, p.product_name, p.product_description, pc.category_name AS category, p.purchase_price, 
-          p.selling_price, p.quantity, p.profit_per_product
-   FROM products p
-   JOIN product_catalog pc ON p.catalog_id = pc.id
-   ORDER BY p.product_name;
-   `
-      );
-      res.json(results.rows);
+    const results = await db.query('SELECT * FROM get_products();');
+    res.json(results.rows);
   } catch (err) {
-      res.status(500).json({ error: err.message });
+    res.status(500).json({ error: err.message });
   }
 });
 
-
-
 router.post('/products', async (req, res) => {
-  console.log("Received data:", req.body); // Log data to debug
   const { productId, productName, productDescription, catalogId, purchasePrice, sellingPrice, quantity } = req.body;
   
-  // Further validation here
   if (!productId || !productName || !productDescription || !catalogId || purchasePrice == null || sellingPrice == null || quantity == null) {
     return res.status(400).json({ error: 'All fields are required and must be valid.' });
   }
@@ -39,15 +28,31 @@ router.post('/products', async (req, res) => {
     );  
     res.status(201).json(result.rows[0]);
   } catch (err) {
-      console.error('Error inserting product:', err);
-      res.status(500).json({ error: 'Internal Server Error' });
+    console.error('Error inserting product:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
+router.put('/products/:id', async (req, res) => {
+  const { id } = req.params;
+  const { productId, productName, productDescription, catalogId, purchasePrice, sellingPrice, quantity } = req.body;
+  
+  if (!productId || !productName || !productDescription || !catalogId || purchasePrice == null || sellingPrice == null || quantity == null) {
+    return res.status(400).json({ error: 'All fields are required and must be valid.' });
+  }
 
+  const profitPerProduct = sellingPrice - purchasePrice;
 
-
-
-
+  try {
+    const result = await db.query(
+      'UPDATE products SET article_id = $1, product_name = $2, product_description = $3, catalog_id = $4, purchase_price = $5, selling_price = $6, quantity = $7, profit_per_product = $8 WHERE id = $9 RETURNING *;',
+      [productId, productName, productDescription, catalogId, purchasePrice, sellingPrice, quantity, profitPerProduct, id]
+    );  
+    res.status(200).json(result.rows[0]);
+  } catch (err) {
+    console.error('Error updating product:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
 
 export default router;
